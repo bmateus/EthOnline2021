@@ -91,11 +91,11 @@ export default function UnityGameContainer(props) {
     unityContext.on("SendReactMessage", handleReactMessage);
     unityContext.on("SignTransaction", handleSignTransactionRequest);
     unityContext.on("SavePictureFrameInfo", handleSavePictureFrameInfo);
-    unityContext.on("Visit", handleVisit);
+    unityContext.on("Visit", (userId) => props.history.push("/"+userId));
     return () => {
       unityContext.removeAllEventListeners();
     };
-  }, []);
+  }, [props.history]);
 
   function handleOnUnityCanvas(canvas) {
     const context = canvas.getContext("webgl");
@@ -191,10 +191,6 @@ export default function UnityGameContainer(props) {
     pictureFrameInfo.save();
   }
 
-  function handleVisit(userId)
-  {
-    props.history.push("/"+userId);
-  }
 
   //set up a moralis query subscription
   async function setupMoralisSubs() {
