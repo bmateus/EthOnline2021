@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import "./styles.css";
-import { Button } from "antd";
 import Unity, { UnityContext } from "react-unity-webgl";
 import Moralis from "moralis";
 import { useMoralis } from "react-moralis";
+import { useParams } from "react-router-dom";
 
 const PictureFrameInfo = Moralis.Object.extend("PictureFrameInfo");
 
@@ -30,8 +30,10 @@ export const smartTrim = (string, maxLength) => {
   return `${string.substring(0, midpoint - lstrip)}...${string.substring(midpoint + rstrip)}`;
 };
 
-export default function UnityGameContainer() {
-  const [isUnityMounted, setIsUnityMounted] = useState(true);
+export default function UnityGameContainer(props) {
+
+  const { walletId } = useParams();
+
   const [progression, setProgression] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   //moralis
@@ -44,15 +46,15 @@ export default function UnityGameContainer() {
   };
 
   useEffect(() => {
-    console.log("user:", user);
-    unityContext.send("Web3Manager", "UserChanged", user ? user.get("ethAddress") : "");
+    console.log("user changed:", user);
+    const currentUser = user ? user.get("ethAddress") : "";
+    console.log("current user:", currentUser);
+    const args = {currentUser:currentUser, currentWorld:walletId};
+    unityContext.send("Web3Manager", "UserChanged", JSON.stringify(args));
     if (user) {
-      //setIsUnityMounted(true);
       setupMoralisSubs();
-    } else {
-      //setIsUnityMounted(false);
     }
-  }, [user]);
+  }, [user, walletId]);
 
   const WalletButton = () => {
     //if (user) console.log(user.get("ethAddress"));
@@ -75,9 +77,12 @@ export default function UnityGameContainer() {
 
   useEffect(() => {
     if (isLoaded) {
-      unityContext.send("Web3Manager", "UserChanged", user ? user.get("ethAddress") : "");
+      const currentUser = user ? user.get("ethAddress") : "";
+      console.log("Unity loaded", currentUser);
+      const args = {currentUser:currentUser, currentWorld:walletId};
+      unityContext.send("Web3Manager", "UserChanged", JSON.stringify(args));
     }
-  }, [isLoaded]);
+  }, [isLoaded, user, walletId]);
 
   useEffect(() => {
     unityContext.on("canvas", handleOnUnityCanvas);
@@ -86,6 +91,7 @@ export default function UnityGameContainer() {
     unityContext.on("SendReactMessage", handleReactMessage);
     unityContext.on("SignTransaction", handleSignTransactionRequest);
     unityContext.on("SavePictureFrameInfo", handleSavePictureFrameInfo);
+    unityContext.on("Visit", handleVisit);
     return () => {
       unityContext.removeAllEventListeners();
     };
@@ -136,13 +142,14 @@ export default function UnityGameContainer() {
     }
     else if (message === "GetPictureFrameInfos")
     {
-      const forUser = args === "" ? Moralis.User.current().get("ethAddress") : args;
+      const forUser = args === "" ? Moralis.User.current().get("ethAddress") : args.toLowerCase();
+      console.log("getInfos for", forUser);
       const  query = new Moralis.Query('PictureFrameInfo')
 				.equalTo('user_id', forUser)
       const pictureFrameInfos = await query.find();
       
       //send back to unity
-      console.log(['{"infos":',JSON.stringify(pictureFrameInfos),'}'].join());
+      console.log(['{"infos":',JSON.stringify(pictureFrameInfos),'}'].join(' '));
       unityContext.send("Web3Manager", "OnPictureFrameData", ['{"infos":',JSON.stringify(pictureFrameInfos),'}'].join(' '));
     }
   }
@@ -184,6 +191,11 @@ export default function UnityGameContainer() {
     pictureFrameInfo.save();
   }
 
+  function handleVisit(userId)
+  {
+    props.history.push("/"+userId);
+  }
+
   //set up a moralis query subscription
   async function setupMoralisSubs() {
     console.log("setting up moralis subs");
@@ -200,13 +212,12 @@ export default function UnityGameContainer() {
   return (
     <>
       <div className="wrapper">
-        
         <div className="navbar">
           <h1 className="title"> The NFT Gallery</h1>
           <WalletButton />
         </div>
         
-        {isUnityMounted === true && (
+        {(
           <>
             <div className="unity-container">
               {isLoaded === false && (
@@ -225,6 +236,7 @@ export default function UnityGameContainer() {
             </div>
           </>
         )}
+
       </div>
     </>
   );

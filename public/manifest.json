@@ -1,6 +1,6 @@
 {
   "short_name": "The NFT Gallery",
-  "name": "An interactive 3D Art Gallery",
+  "description": "An interactive 3D gallery where you can hang up NFTs",
   "icons": [
     {
       "src": "favicon.ico",
@@ -11,5 +11,6 @@
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "skylink": "sia://CABvfSUDUY5AnzOb_p8pRjVeB9aWWVE94l7dGzc_ba2pQA"
 }
